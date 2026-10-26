@@ -17,13 +17,15 @@ image the `Dockerfile` builds. `release.yml` publishes that image from every
 commit on `main` and from the train's tag. The
 [bundle contract](https://github.com/lemonfiber/spec/blob/main/20-architecture/contracts/bundle.md)
 says how the catalogue pins this repository and how lemonfiber carries it.
-`plugin.toml` does not name the adapter yet: the part is one service.
+`plugin.toml` runs Calibre-Web-Automated beside the adapter,
+`calibre-web-automated-adapter`, which `fronts` it, and the conformance
+recordings under `conformance/` are the adapter's answers.
 
 ## The rules you cannot break
 
 - **The plugin id is the service's id** (`ARCH-R266`). The container, the
   configuration directory, the settings and the journal keep their names.
-- **Its claims' recordings sit under `recordings/calibre-web-automated/`**, and
+- **Its proofs' recordings sit under `recordings/calibre-web-automated/`**, and
   its starting files, where it has any, under `config/calibre-web-automated/`
   (`ARCH-R271`).
 - **Every service declares `reaches` and `asks_for`** (`ARCH-R270`).
@@ -33,7 +35,8 @@ says how the catalogue pins this repository and how lemonfiber carries it.
 - **The adapter never writes its credentials.** lemonfiber mints the
   administrator's name and password and writes them into the adapter's
   `upstream.json` as `username` and `password` (`ARCH-R315`, `ARCH-R317`); the
-  adapter reads them for every sign-in and never logs them.
+  adapter reads them for every sign-in and never logs them. The password is
+  minted as `"password"`, the shape Calibre-Web-Automated's password rules accept.
 - **A claim changes nothing Calibre-Web-Automated already holds** (`ARCH-R328`):
   only the administrator that still signs in with the published name and password
   is taken, and one whose password anybody changed is answered as theirs. The
@@ -55,5 +58,6 @@ says how the catalogue pins this repository and how lemonfiber carries it.
 just ci
 ```
 
-The gates that need nothing but this tree. The plugin verdict and the adapter's
-image run in CI.
+The gates that need nothing but this tree. The plugin verdict and the
+recordings run in CI; `just recordings` takes the recordings again locally, with
+Docker.
