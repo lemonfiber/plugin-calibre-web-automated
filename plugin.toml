@@ -23,25 +23,51 @@ criticality = "enhancing"
 memory_mib  = 300
 reaches     = "book metadata providers"
 asks_for    = "Reads covers and descriptions for the ebooks in your library when you ask it to."
-provides    = ["media.serve"]
 takes_data  = true
 user_mode   = "puid-env"
 replaces    = "calibre-web-automated"
 
-[[ask]]
-capability = "proxy.front"
+[[service]]
+id          = "calibre-web-automated-adapter"
+name        = "Calibre-Web-Automated adapter"
+image       = "ghcr.io/lemonfiber/calibre-web-automated-adapter"
+digest      = "sha256:5220a90766349ecab97f809c173565e1f41f8e775015c9e10f867b73774c40d1"
+tag         = "main-547108b583c9"
+criticality = "enhancing"
+reaches     = ""
+asks_for    = "Nothing beyond this machine. It answers lemonfiber's owner.claim and media.serve contracts by calling Calibre-Web-Automated, beside it, as the administrator lemonfiber minted for it."
+config_path = "/config"
+listens     = 8080
+speaks      = ["owner.claim@1", "media.serve@1"]
+fronts      = "calibre-web-automated"
+provides    = ["media.serve"]
+upstream    = { username = { secret = "admin-username" }, password = { secret = "admin-password" } }
 
-[[claim]]
-capability = "media.serve"
+[[secret]]
+id     = "admin-username"
+of     = "calibre-web-automated"
+minted = true
+why    = "The name of the administrator Calibre-Web-Automated is claimed for, which the adapter in front of it signs in as"
 
-[[claim.probe]]
-id      = "guarded"
+[[secret]]
+id     = "admin-password"
+of     = "calibre-web-automated"
+minted = "password"
+why    = "The password of the administrator Calibre-Web-Automated is claimed for, which the adapter in front of it signs in with, in the shape Calibre-Web-Automated's password rules accept"
+
+[[proof]]
+id      = "calibre-web-automated.guarded"
+service = "calibre-web-automated"
+title   = "Calibre-Web-Automated shows its catalogue to nobody presenting nothing"
+fixture = "recordings/calibre-web-automated/opds-guarded.json"
+why     = """
+A library server on the household network that answered this would be
+publishing the household's books to every device that can reach it. Only the
+adapter asks it, signed in as the administrator lemonfiber minted.
+"""
 request = { method = "GET", path = "/opds" }
-expect  = { status = 401 }
-fixture = "recordings/calibre-web-automated/media-serve-guarded.json"
+expect  = { status = 401, body_starts_with = "Unauthorized Access" }
 
-[[claim.probe]]
-id      = "catalogue"
-request = { method = "GET", path = "/ajax/listbooks" }
-expect  = { status = 200, json_types = { rows = "list", total = "int" } }
-fixture = "recordings/calibre-web-automated/media-serve-catalogue.json"
+[[ask]]
+service    = "calibre-web-automated"
+capability = "proxy.front"
