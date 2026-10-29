@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use lemonfiber_ports::http::{Http, Method, Request, Response, Unreachable};
-use lemonfiber_ports::service::{Failure, Library as _, Owner, Ownership as _};
+use lemonfiber_ports::service::{Encrypting as _, Failure, Library as _, Owner, Ownership as _};
 
 use super::{session_in, CalibreWebAutomated};
 
@@ -435,4 +435,13 @@ async fn it_is_theirs_where_neither_signs_in() {
         assert_eq!(calibre(&http).owner().await.ok(), Some(Owner::Theirs));
         assert_eq!(calibre(&http).claim().await.ok(), Some(Owner::Theirs));
     }
+}
+
+#[tokio::test]
+async fn it_serves_no_internal_tls_port_and_asks_nothing() {
+    let http = scripted(Vec::new());
+    let outcome = calibre(&http)
+        .serve_tls("/config/internal.p12", "pin")
+        .await;
+    assert!(matches!(outcome, Err(Failure::Unsupported { .. })));
 }
