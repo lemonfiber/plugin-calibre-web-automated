@@ -5,7 +5,8 @@ use async_trait::async_trait;
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::media::Kind;
 use lemonfiber_ports::service::{
-    AppKeys, Dated, Declared, Declaring, Failure, Fronted, Library, SeriesHeld, Upkeep,
+    AppKeys, Applied, Dated, Declared, Declaring, Encrypting, Failure, Fronted, Library,
+    SeriesHeld, Upkeep,
 };
 
 use super::CalibreWebAutomated;
@@ -25,6 +26,8 @@ const NO_ORIGINS: &str =
 const NO_RESTART: &str = "Calibre-Web-Automated is not asked to start again by this adapter";
 
 const NO_GUARD: &str = "Calibre-Web-Automated serves no member through a guard of lemonfiber's";
+
+const NO_TLS: &str = "Calibre-Web-Automated serves no internal TLS port";
 
 const REFRESH: &str = "/cwa-library-refresh";
 
@@ -101,5 +104,12 @@ impl Fronted for CalibreWebAutomated {
 impl Declaring for CalibreWebAutomated {
     async fn declared(&self) -> Result<Declared, Failure> {
         Err(Self::unsupported(NO_GUARD))
+    }
+}
+
+#[async_trait]
+impl Encrypting for CalibreWebAutomated {
+    async fn serve_tls(&self, _path: &str, _pin: &str) -> Result<Applied, Failure> {
+        Err(Self::unsupported(NO_TLS))
     }
 }
