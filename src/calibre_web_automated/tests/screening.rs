@@ -154,7 +154,11 @@ async fn a_poster_is_the_book_s_cover() {
             Method::Get,
             "/cover/2",
             None,
-            vec![answer(200, &[("content-type", "image/jpeg")], "jpeg-bytes")],
+            vec![answer(
+                200,
+                &[("content-type", "image/gif")],
+                "GIF89a-bytes",
+            )],
         ),
     ]);
     assert_eq!(
@@ -164,8 +168,8 @@ async fn a_poster_is_the_book_s_cover() {
             .ok()
             .flatten(),
         Some(Image {
-            media_type: "image/jpeg".to_owned(),
-            bytes: b"jpeg-bytes".to_vec(),
+            media_type: "image/gif".to_owned(),
+            bytes: b"GIF89a-bytes".to_vec(),
         })
     );
     assert!(http
@@ -192,7 +196,7 @@ async fn a_cover_asked_for_on_an_ended_session_is_asked_for_again_signed_in_afre
             None,
             vec![
                 sent_to_sign_in(),
-                answer(200, &[("content-type", "image/png")], "png"),
+                answer(200, &[("content-type", "image/webp")], "RIFF0000WEBPVP8 "),
             ],
         ),
     ]);
@@ -203,7 +207,7 @@ async fn a_cover_asked_for_on_an_ended_session_is_asked_for_again_signed_in_afre
         .flatten();
     assert_eq!(
         image.map(|image| image.media_type),
-        Some("image/png".to_owned())
+        Some("image/webp".to_owned())
     );
 }
 
@@ -221,23 +225,33 @@ async fn a_book_with_no_cover_or_a_cover_that_is_no_picture_has_no_poster() {
         Some(None)
     );
     assert!(bare.sent_to(Method::Get, "/cover/").is_empty());
-    let text = signing_in(vec![
-        (Method::Get, "/book/2", None, vec![page("<html>")]),
-        (Method::Get, "/ajax/listbooks", None, vec![page(ONE_BOOK)]),
+    for (served, body) in [
+        ("text/html", "<html>"),
         (
-            Method::Get,
-            "/cover/2",
-            None,
-            vec![answer(200, &[("content-type", "text/html")], "<html>")],
+            "image/svg+xml",
+            r#"<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>"#,
         ),
-    ]);
-    assert_eq!(
-        calibre(&text)
-            .picture(None, "2", Picture::Poster)
-            .await
-            .ok(),
-        Some(None)
-    );
+        ("image/png", "<html><script>alert(1)</script></html>"),
+    ] {
+        let text = signing_in(vec![
+            (Method::Get, "/book/2", None, vec![page("<html>")]),
+            (Method::Get, "/ajax/listbooks", None, vec![page(ONE_BOOK)]),
+            (
+                Method::Get,
+                "/cover/2",
+                None,
+                vec![answer(200, &[("content-type", served)], body)],
+            ),
+        ]);
+        assert_eq!(
+            calibre(&text)
+                .picture(None, "2", Picture::Poster)
+                .await
+                .ok(),
+            Some(None),
+            "{served}"
+        );
+    }
 }
 
 #[tokio::test]
