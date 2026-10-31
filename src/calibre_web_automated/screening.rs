@@ -5,6 +5,7 @@
 
 use async_trait::async_trait;
 use lemonfiber_adapter_kit::endpoint::form_encoded;
+use lemonfiber_adapter_kit::picture;
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::service::{
     Failure, Holds, HowFar, Image, Item, ItemDetail, ItemProgress, Medium, Picture, Playback,
@@ -31,8 +32,6 @@ const COVER: &str = "/cover";
 const UNREAD: &str = "the books Calibre-Web-Automated holds could not be read";
 
 const TAGS_BETWEEN: char = ',';
-
-const PICTURE_PREFIX: &str = "image/";
 
 #[derive(Deserialize)]
 struct Books {
@@ -158,14 +157,10 @@ impl CalibreWebAutomated {
                 .endpoint
                 .refused("Calibre-Web-Automated would not answer the cover"));
         }
-        let Some(media_type) = fetched
-            .header("content-type")
-            .filter(|kind| kind.starts_with(PICTURE_PREFIX))
-            .map(str::to_owned)
-        else {
-            return Ok(None);
-        };
-        Ok(fetched.bytes.map(|bytes| Image { media_type, bytes }))
+        let served = fetched.header("content-type").map(str::to_owned);
+        Ok(fetched
+            .bytes
+            .and_then(|bytes| picture::image(served.as_deref(), bytes)))
     }
 
     async fn books(&self, most: u32) -> Result<Vec<Item>, Failure> {
