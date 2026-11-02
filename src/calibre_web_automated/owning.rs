@@ -5,7 +5,7 @@
 use async_trait::async_trait;
 use lemonfiber_adapter_kit::endpoint::form_encoded;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{Failure, Owner, Ownership};
+use lemonfiber_ports::service::{Claim, Failure, Owner, Ownership};
 use serde::Deserialize;
 
 use super::form::{self, Field};
@@ -193,17 +193,17 @@ impl Ownership for CalibreWebAutomated {
         Ok(Owner::Theirs)
     }
 
-    async fn claim(&self) -> Result<Owner, Failure> {
+    async fn claim(&self) -> Result<Claim, Failure> {
         let (name, password) = self.minted()?;
         if let Some(session) = self.signed_in_as(&name, &password).await? {
             self.keep(session);
-            return Ok(Owner::Ours);
+            return Ok(Claim::Held(Owner::Ours));
         }
         let Some(session) = self
             .signed_in_as(PUBLISHED_NAME, PUBLISHED_PASSWORD)
             .await?
         else {
-            return Ok(Owner::Theirs);
+            return Ok(Claim::Held(Owner::Theirs));
         };
         self.renamed(&session, &name, &password).await?;
         let session = self.signed_in_as(&name, &password).await?.ok_or_else(|| {
@@ -212,6 +212,6 @@ impl Ownership for CalibreWebAutomated {
             )
         })?;
         self.keep(session);
-        Ok(Owner::Ours)
+        Ok(Claim::Held(Owner::Ours))
     }
 }

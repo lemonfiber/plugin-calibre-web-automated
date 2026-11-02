@@ -3,7 +3,9 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use lemonfiber_ports::http::{Http, Method, Request, Response, Unreachable};
-use lemonfiber_ports::service::{Encrypting as _, Failure, Library as _, Owner, Ownership as _};
+use lemonfiber_ports::service::{
+    Claim, Encrypting as _, Failure, Library as _, Owner, Ownership as _,
+};
 
 use super::{session_in, CalibreWebAutomated};
 
@@ -433,7 +435,10 @@ async fn it_is_theirs_where_neither_signs_in() {
             (Method::Post, "/login", None, vec![refused]),
         ]);
         assert_eq!(calibre(&http).owner().await.ok(), Some(Owner::Theirs));
-        assert_eq!(calibre(&http).claim().await.ok(), Some(Owner::Theirs));
+        assert_eq!(
+            calibre(&http).claim().await.ok(),
+            Some(Claim::Held(Owner::Theirs))
+        );
     }
 }
 

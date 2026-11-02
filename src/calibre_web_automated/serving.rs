@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::media::Kind;
 use lemonfiber_ports::service::{
-    AppKeys, Applied, Dated, Declared, Declaring, Encrypting, Failure, Fronted, Library,
-    SeriesHeld, Upkeep,
+    AppKeys, Applied, Astray, Dated, Declared, Declaring, Encrypting, Failure, FiledAt, Fronted,
+    Furnished, Furnishing, Library, SeriesHeld, Upkeep,
 };
 
 use super::CalibreWebAutomated;
@@ -28,6 +28,9 @@ const NO_RESTART: &str = "Calibre-Web-Automated is not asked to start again by t
 const NO_GUARD: &str = "Calibre-Web-Automated serves no member through a guard of lemonfiber's";
 
 const NO_TLS: &str = "Calibre-Web-Automated serves no internal TLS port";
+
+const NO_LIBRARIES: &str =
+    "Calibre-Web-Automated reads the one Calibre library its configuration names";
 
 const REFRESH: &str = "/cwa-library-refresh";
 
@@ -75,6 +78,10 @@ impl AppKeys for CalibreWebAutomated {
     async fn revoke(&self, _key: &str) -> Result<(), Failure> {
         Err(Self::unsupported(NO_KEYS))
     }
+
+    async fn astray(&self, _app: &str) -> Result<Vec<Astray>, Failure> {
+        Err(Self::unsupported(NO_KEYS))
+    }
 }
 
 #[async_trait]
@@ -111,5 +118,12 @@ impl Declaring for CalibreWebAutomated {
 impl Encrypting for CalibreWebAutomated {
     async fn serve_tls(&self, _path: &str, _pin: &str) -> Result<Applied, Failure> {
         Err(Self::unsupported(NO_TLS))
+    }
+}
+
+#[async_trait]
+impl Furnishing for CalibreWebAutomated {
+    async fn furnish(&self, _filed: &[FiledAt]) -> Result<Vec<Furnished>, Failure> {
+        Err(Self::unsupported(NO_LIBRARIES))
     }
 }

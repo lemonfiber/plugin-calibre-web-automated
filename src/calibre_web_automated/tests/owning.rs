@@ -1,5 +1,5 @@
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{Library as _, Owner, Ownership as _};
+use lemonfiber_ports::service::{Claim, Library as _, Owner, Ownership as _};
 
 use super::super::owning::{shown, taken};
 use super::{
@@ -60,7 +60,7 @@ async fn a_claim_renames_the_published_administrator_in_one_change_and_ticks_its
         ],
     ));
     let calibre = calibre(&http);
-    assert_eq!(calibre.claim().await.ok(), Some(Owner::Ours));
+    assert_eq!(calibre.claim().await.ok(), Some(Claim::Held(Owner::Ours)));
     let users = http.sent_to(Method::Get, "/ajax/listusers");
     assert_eq!(
         users.first().map(|one| one.url.as_str()),
@@ -116,7 +116,10 @@ async fn a_claim_renames_the_published_administrator_in_one_change_and_ticks_its
 #[tokio::test]
 async fn a_claim_changes_nothing_the_minted_administrator_already_holds() {
     let http = scripted(published(vec![signed_in_as("ours")], Vec::new()));
-    assert_eq!(calibre(&http).claim().await.ok(), Some(Owner::Ours));
+    assert_eq!(
+        calibre(&http).claim().await.ok(),
+        Some(Claim::Held(Owner::Ours))
+    );
     assert!(http.sent_to(Method::Post, "/me").is_empty());
 }
 

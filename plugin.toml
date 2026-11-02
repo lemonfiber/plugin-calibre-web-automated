@@ -24,6 +24,7 @@ memory_mib  = 300
 reaches     = "book metadata providers"
 asks_for    = "Reads covers and descriptions for the ebooks in your library when you ask it to."
 takes_data  = true
+media_types = ["books"]
 user_mode   = "puid-env"
 replaces    = "calibre-web-automated"
 
