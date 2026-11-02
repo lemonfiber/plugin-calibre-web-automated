@@ -131,12 +131,17 @@ async fn what_calibre_web_automated_has_no_equivalent_for_and_whatever_names_a_m
         ("dated", r#"{"app":"a"}"#),
         ("answers_to", r#"{"key":"k"}"#),
         ("revoke", r#"{"key":"k"}"#),
+        ("astray", r#"{"app":"a"}"#),
         ("known_proxies", "{}"),
         ("trust_only", r#"{"address":"10.0.0.1"}"#),
         ("allowed_origins", "{}"),
         ("allow_only", r#"{"origin":"https://example.org"}"#),
         ("restart", "{}"),
         ("declared", "{}"),
+        (
+            "furnish",
+            r#"{"filed":[{"media_type":"books","folder":"/media"}]}"#,
+        ),
     ] {
         let fake = Fake::silent();
         let (status, body) = answered_by(
