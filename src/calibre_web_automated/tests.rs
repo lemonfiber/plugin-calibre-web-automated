@@ -358,7 +358,10 @@ async fn a_sign_in_page_it_cannot_sign_in_from_is_refused() {
         (Method::Get, "/login", None, vec![login_page()]),
         (Method::Post, "/login", None, vec![answer(429, &[], "")]),
     ]);
-    assert!(refused_saying(calibre(&limited).rescan().await, "HTTP 429"));
+    assert!(matches!(
+        calibre(&limited).rescan().await,
+        Err(Failure::Unavailable { .. })
+    ));
 }
 
 #[tokio::test]

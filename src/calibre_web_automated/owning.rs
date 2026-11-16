@@ -23,6 +23,8 @@ const PROFILE_FORM: &str = "name=\"password\"";
 
 const USERS: &str = "/ajax/listusers";
 
+const CLAIMED_ITSELF: &str = "Calibre-Web-Automated is claimed with the administrator lemonfiber minted for this plugin, which no outside service holds";
+
 const USERS_MOST: &str = "100";
 
 const SIDEBAR: &str = "/ajax/editlistusers/sidebar_view";
@@ -213,5 +215,9 @@ impl Ownership for CalibreWebAutomated {
         })?;
         self.keep(session);
         Ok(Claim::Held(Owner::Ours))
+    }
+
+    async fn claimed_by(&self) -> Result<Option<String>, Failure> {
+        Err(Self::unsupported(CLAIMED_ITSELF))
     }
 }

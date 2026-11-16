@@ -3,10 +3,11 @@
 
 use async_trait::async_trait;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::media::Kind;
+use lemonfiber_ports::media::TitleKind;
 use lemonfiber_ports::service::{
-    AppKeys, Applied, Astray, Dated, Declared, Declaring, Encrypting, Failure, FiledAt, Fronted,
-    Furnished, Furnishing, Library, SeriesHeld, Upkeep,
+    Allowing, AppKeys, Applied, Astray, Channel, Dated, Declared, Declaring, Encrypting, Failure,
+    FiledAt, Fronted, Furnished, Furnishing, Heard, Library, OutsideAccount, OutsideServer,
+    Recounting, SeriesHeld, Tuned, Tuning, Upkeep,
 };
 
 use super::CalibreWebAutomated;
@@ -32,12 +33,23 @@ const NO_TLS: &str = "Calibre-Web-Automated serves no internal TLS port";
 const NO_LIBRARIES: &str =
     "Calibre-Web-Automated reads the one Calibre library its configuration names";
 
+const NO_OUTSIDE: &str =
+    "Calibre-Web-Automated holds its own accounts, and no outside service holds them";
+
+const NO_EVENTS: &str = "Calibre-Web-Automated tells nobody what it adds or what goes wrong";
+
+const NO_LIVE_TV: &str = "Calibre-Web-Automated has no live TV";
+
 const REFRESH: &str = "/cwa-library-refresh";
 
 #[async_trait]
 impl Library for CalibreWebAutomated {
-    async fn has_item(&self, _kind: Kind, _term: &str) -> Result<bool, Failure> {
-        Err(Self::unsupported(NO_KINDS))
+    async fn has_item(&self, kind: TitleKind, term: &str) -> Result<bool, Failure> {
+        if kind == TitleKind::Books {
+            self.has_book(term).await
+        } else {
+            Ok(false)
+        }
     }
 
     async fn rescan(&self) -> Result<(), Failure> {
@@ -81,6 +93,49 @@ impl AppKeys for CalibreWebAutomated {
 
     async fn astray(&self, _app: &str) -> Result<Vec<Astray>, Failure> {
         Err(Self::unsupported(NO_KEYS))
+    }
+
+    async fn account(&self, _app: &str) -> Result<OutsideAccount, Failure> {
+        Err(Self::unsupported(NO_OUTSIDE))
+    }
+
+    async fn listed_as(&self) -> Result<OutsideServer, Failure> {
+        Err(Self::unsupported(NO_OUTSIDE))
+    }
+}
+
+#[async_trait]
+impl Allowing for CalibreWebAutomated {
+    async fn allow_origins(&self, _origins: &[String]) -> Result<(), Failure> {
+        Err(Self::unsupported(NO_ORIGINS))
+    }
+}
+
+#[async_trait]
+impl Recounting for CalibreWebAutomated {
+    async fn events(
+        &self,
+        _address: Option<&str>,
+        _pin: Option<&str>,
+        _key: Option<&str>,
+        _every: Option<u32>,
+    ) -> Result<Option<Heard>, Failure> {
+        Err(Self::unsupported(NO_EVENTS))
+    }
+}
+
+#[async_trait]
+impl Tuning for CalibreWebAutomated {
+    async fn channels(&self, _member: &str) -> Result<Vec<Channel>, Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
+    }
+
+    async fn tune(&self, _member: &str, _channel: &str) -> Result<Option<Tuned>, Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
+    }
+
+    async fn untune(&self, _closes_by: &str) -> Result<(), Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
     }
 }
 
