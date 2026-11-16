@@ -416,6 +416,44 @@ async fn it_is_ours_where_the_minted_administrator_signs_in() {
 }
 
 #[tokio::test]
+async fn asking_who_holds_it_again_signs_in_once_and_keeps_the_session() {
+    let http = signing_in(vec![(
+        Method::Get,
+        "/me",
+        None,
+        vec![page("<html></html>")],
+    )]);
+    let calibre = calibre(&http);
+    for _ in 0..3 {
+        assert_eq!(calibre.owner().await.ok(), Some(Owner::Ours));
+    }
+    assert_eq!(calibre.claim().await.ok(), Some(Claim::Held(Owner::Ours)));
+    assert_eq!(http.sent_to(Method::Post, "/login").len(), 1);
+    assert_eq!(http.sent_to(Method::Get, "/me").len(), 3);
+    assert!(http.sent_to(Method::Get, "/me").iter().all(|one| one
+        .headers
+        .contains(&("Cookie".to_owned(), "session=held".to_owned()))));
+}
+
+#[tokio::test]
+async fn a_held_session_it_sends_to_sign_in_is_opened_again_to_say_who_holds_it() {
+    let http = signing_in(vec![(Method::Get, "/me", None, vec![sent_to_sign_in()])]);
+    let calibre = calibre(&http);
+    assert_eq!(calibre.owner().await.ok(), Some(Owner::Ours));
+    assert_eq!(calibre.owner().await.ok(), Some(Owner::Ours));
+    assert_eq!(http.sent_to(Method::Post, "/login").len(), 2);
+}
+
+#[tokio::test]
+async fn a_held_session_it_cannot_check_is_refused_without_signing_in_again() {
+    let http = signing_in(vec![(Method::Get, "/me", None, vec![answer(500, &[], "")])]);
+    let calibre = calibre(&http);
+    assert_eq!(calibre.owner().await.ok(), Some(Owner::Ours));
+    assert!(refused_saying(calibre.owner().await, "HTTP 500"));
+    assert_eq!(http.sent_to(Method::Post, "/login").len(), 1);
+}
+
+#[tokio::test]
 async fn nobody_holds_it_while_the_published_administrator_still_signs_in() {
     let http = scripted(vec![
         (Method::Get, "/login", None, vec![login_page()]),
