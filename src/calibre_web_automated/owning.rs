@@ -9,7 +9,7 @@ use lemonfiber_ports::service::{Claim, Failure, Owner, Ownership};
 use serde::Deserialize;
 
 use super::form::{self, Field};
-use super::{CalibreWebAutomated, Carried, CSRF};
+use super::{signed_out, CalibreWebAutomated, Carried, CSRF};
 
 /// The administrator a fresh Calibre-Web-Automated is made with.
 pub(super) const PUBLISHED_NAME: &str = "admin";
@@ -107,6 +107,26 @@ impl CalibreWebAutomated {
 
     /// Rename the administrator signed in on `session` and give it `password`, in the one
     /// change its profile makes, then tick again the views that change took away.
+    async fn still_signed_in(&self) -> Result<bool, Failure> {
+        let held = self.session.lock().ok().and_then(|held| held.clone());
+        let Some(session) = held else {
+            return Ok(false);
+        };
+        let carried = Carried {
+            session: Some(&session),
+            ..Carried::default()
+        };
+        let response = self
+            .endpoint
+            .send(&self.request(Method::Get, PROFILE, carried))
+            .await?;
+        if signed_out(&response) {
+            return Ok(false);
+        }
+        self.endpoint.expect_success(&response)?;
+        Ok(true)
+    }
+
     async fn renamed(&self, session: &str, name: &str, password: &str) -> Result<(), Failure> {
         let before = self.published(session).await?;
         let signed_in = |form| Carried {
@@ -180,6 +200,9 @@ impl CalibreWebAutomated {
 #[async_trait]
 impl Ownership for CalibreWebAutomated {
     async fn owner(&self) -> Result<Owner, Failure> {
+        if self.still_signed_in().await? {
+            return Ok(Owner::Ours);
+        }
         let (name, password) = self.minted()?;
         if let Some(session) = self.signed_in_as(&name, &password).await? {
             self.keep(session);
@@ -196,6 +219,9 @@ impl Ownership for CalibreWebAutomated {
     }
 
     async fn claim(&self) -> Result<Claim, Failure> {
+        if self.still_signed_in().await? {
+            return Ok(Claim::Held(Owner::Ours));
+        }
         let (name, password) = self.minted()?;
         if let Some(session) = self.signed_in_as(&name, &password).await? {
             self.keep(session);
