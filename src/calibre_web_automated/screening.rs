@@ -31,6 +31,8 @@ const COVER: &str = "/cover";
 
 const UNREAD: &str = "the books Calibre-Web-Automated holds could not be read";
 
+const SEARCHED_AT_MOST: &str = "500";
+
 const TAGS_BETWEEN: char = ',';
 
 #[derive(Deserialize)]
@@ -161,6 +163,20 @@ impl CalibreWebAutomated {
         Ok(fetched
             .bytes
             .and_then(|bytes| picture::image(served.as_deref(), bytes)))
+    }
+
+    pub(super) async fn has_book(&self, term: &str) -> Result<bool, Failure> {
+        let asked = form_encoded(&[
+            ("offset", "0"),
+            ("limit", SEARCHED_AT_MOST),
+            ("search", term),
+        ]);
+        let books: Books = self.read(&format!("{BOOKS}?{asked}"), UNREAD).await?;
+        let needle = term.to_lowercase();
+        Ok(books
+            .rows
+            .iter()
+            .any(|book| book.title.to_lowercase().contains(&needle)))
     }
 
     async fn books(&self, most: u32) -> Result<Vec<Item>, Failure> {

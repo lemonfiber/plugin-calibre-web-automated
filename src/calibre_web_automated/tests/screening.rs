@@ -1,4 +1,5 @@
 use lemonfiber_ports::http::Method;
+use lemonfiber_ports::media::TitleKind;
 use lemonfiber_ports::service::{
     Failure, Holds, Image, Item, ItemDetail, Library as _, Medium, Picture, Screening as _,
 };
@@ -317,4 +318,41 @@ fn what_is_said_of_a_book_is_read_as_text() {
     );
     assert_eq!(plain("a > b"), "a > b");
     assert_eq!(plain("<br/>"), "");
+}
+
+#[tokio::test]
+async fn a_book_whose_title_holds_the_term_is_in_the_library() {
+    let http = signing_in(vec![(
+        Method::Get,
+        "/ajax/listbooks",
+        None,
+        vec![page(BOOKS), page(BOOKS)],
+    )]);
+    let calibre = calibre(&http);
+    assert_eq!(
+        calibre.has_item(TitleKind::Books, "test BOOK").await.ok(),
+        Some(true)
+    );
+    assert_eq!(
+        calibre.has_item(TitleKind::Books, "Dune").await.ok(),
+        Some(false)
+    );
+    assert_eq!(
+        http.sent_to(Method::Get, "/ajax/listbooks")
+            .first()
+            .map(|one| one.url.clone())
+            .as_deref(),
+        Some(
+            "http://calibre-web-automated:8083/ajax/listbooks?offset=0&limit=500&search=test+BOOK"
+        )
+    );
+}
+
+#[tokio::test]
+async fn nothing_but_books_is_in_the_library_and_nothing_is_asked_for_it() {
+    let http = scripted(Vec::new());
+    for kind in [TitleKind::Tv, TitleKind::Movies, TitleKind::Music] {
+        assert_eq!(calibre(&http).has_item(kind, "t").await.ok(), Some(false));
+    }
+    assert!(http.sent_to(Method::Get, "/").is_empty());
 }
